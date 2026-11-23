@@ -1,0 +1,17 @@
+url: https://emilhvitfeldt.github.io/spatialrecipes/
+
+template:
+  bootstrap: 5
+
+development:
+  mode: auto
+
+# Add steps to the reference index as they are created, for example:
+# reference:
+# - title: Distance
+#   contents:
+#   - step_example
+reference:
+- title: Developer tools
+  contents:
+  - required_pkgs.spatialrecipes
