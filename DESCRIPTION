@@ -19,9 +19,11 @@ Depends:
 Imports:
     generics (>= 0.1.0),
     rlang (>= 1.1.0),
+    sf,
     tibble
 Suggests:
     covr,
+    modeldata,
     testthat (>= 3.0.0)
 Config/Needs/website: tidyverse/tidytemplate
 Config/testthat/edition: 3
