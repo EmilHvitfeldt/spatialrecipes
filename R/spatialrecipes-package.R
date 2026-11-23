@@ -2,6 +2,7 @@
 "_PACKAGE"
 
 ## usethis namespace: start
+#' @import rlang
 #' @importFrom recipes add_step
 #' @importFrom recipes bake
 #' @importFrom recipes check_new_data
@@ -13,8 +14,6 @@
 #' @importFrom recipes recipes_eval_select
 #' @importFrom recipes sel2char
 #' @importFrom recipes step
-#' @importFrom rlang caller_env
-#' @importFrom rlang enquos
 #' @importFrom tibble as_tibble
 #' @importFrom tibble tibble
 ## usethis namespace: end
