@@ -36,11 +36,11 @@ test_that("haversine and geodesic distances match known values", {
   ref <- planar_points(cbind(0, 0), crs = 4326)
 
   dist <- function(metric) {
-    recipe(y ~ ., data = data) |>
+    res <- recipe(y ~ ., data = data) |>
       step_spatial_distance(geometry, ref = ref, metric = metric) |>
       prep() |>
-      bake(new_data = NULL) |>
-      _$geometry_dist
+      bake(new_data = NULL)
+    res$geometry_dist
   }
 
   expect_equal(dist("haversine"), 6371008.8 * pi / 180, tolerance = 1e-9)
