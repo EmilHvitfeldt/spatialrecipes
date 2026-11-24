@@ -11,23 +11,15 @@
 #' @param crs The coordinate reference system of the coordinates, in any form
 #'   accepted by [sf::st_crs()]. Defaults to `4326`, WGS 84 longitude and
 #'   latitude in degrees.
-#' @param name A single string, the name of the new geometry column.
-#' @param columns A named character vector with the names of the longitude and
-#'   latitude columns, populated by `prep()`.
+#' @param name A single string, the name of the new geometry column. Defaults
+#'   to `"geometry"`.
 #' @param keep_original_cols A logical to keep the original longitude and
 #'   latitude columns after the geometry column is created. Defaults to `FALSE`.
 #' @return An updated version of `recipe` with the new step added to the
 #'   sequence of existing steps (if any).
 #' @details
 #'
-#' The new column is a plain `sfc` column in a tibble. The data does not need to
-#' be an `sf` object, and the result of [recipes::bake()] is always a tibble. Use
-#' [sf::st_as_sf()] on the baked data if you need an `sf` object.
-#'
 #' Rows where either coordinate is missing get an empty point (`POINT EMPTY`).
-#'
-#' The new column has the type `"other"` in the recipe, so it is not matched by
-#' selectors such as [recipes::all_numeric_predictors()]. Select it by name.
 #'
 #' # Tidying
 #'
@@ -62,7 +54,6 @@ step_sfc_point <-
     trained = FALSE,
     crs = 4326,
     name = "geometry",
-    columns = NULL,
     keep_original_cols = FALSE,
     skip = FALSE,
     id = rand_id("sfc_point")
@@ -77,7 +68,6 @@ step_sfc_point <-
         trained = trained,
         crs = crs,
         name = name,
-        columns = columns,
         keep_original_cols = keep_original_cols,
         skip = skip,
         id = id
@@ -92,7 +82,6 @@ step_sfc_point_new <-
     trained,
     crs,
     name,
-    columns,
     keep_original_cols,
     skip,
     id
@@ -104,7 +93,6 @@ step_sfc_point_new <-
       trained = trained,
       crs = crs,
       name = name,
-      columns = columns,
       keep_original_cols = keep_original_cols,
       skip = skip,
       id = id
@@ -134,12 +122,11 @@ prep.step_sfc_point <- function(x, training, info = NULL, ...) {
   }
 
   step_sfc_point_new(
-    terms = x$terms,
+    terms = c(lon = lon, lat = lat),
     role = x$role,
     trained = TRUE,
     crs = x$crs,
     name = x$name,
-    columns = c(lon = lon, lat = lat),
     keep_original_cols = recipes::get_keep_original_cols(x),
     skip = x$skip,
     id = x$id
@@ -148,19 +135,14 @@ prep.step_sfc_point <- function(x, training, info = NULL, ...) {
 
 #' @export
 bake.step_sfc_point <- function(object, new_data, ...) {
-  col_names <- unname(object$columns)
+  col_names <- unname(object$terms)
   check_new_data(col_names, object, new_data)
 
-  lon <- as.numeric(new_data[[object$columns[["lon"]]]])
-  lat <- as.numeric(new_data[[object$columns[["lat"]]]])
-  points <- lapply(seq_along(lon), function(i) {
-    if (is.na(lon[i]) || is.na(lat[i])) {
-      sf::st_point()
-    } else {
-      sf::st_point(c(lon[i], lat[i]))
-    }
-  })
-  geometry <- sf::st_sfc(points, crs = object$crs)
+  geometry <- make_points(
+    new_data[[object$terms[["lon"]]]],
+    new_data[[object$terms[["lat"]]]],
+    crs = object$crs
+  )
 
   res <- tibble::new_tibble(
     rlang::set_names(list(geometry), object$name),
@@ -168,17 +150,36 @@ bake.step_sfc_point <- function(object, new_data, ...) {
   )
   recipes::check_name(res, new_data, object, newname = object$name)
 
-  new_data[[object$name]] <- geometry
+  new_data <- vctrs::vec_cbind(new_data, res, .name_repair = "minimal")
   recipes::remove_original_cols(new_data, object, col_names)
+}
+
+make_points <- function(lon, lat, crs) {
+  lon <- as.numeric(lon)
+  lat <- as.numeric(lat)
+  points <- lapply(seq_along(lon), \(i) make_point(lon[i], lat[i]))
+  sf::st_sfc(points, crs = crs)
+}
+
+make_point <- function(lon, lat) {
+  if (is.na(lon) || is.na(lat)) {
+    return(sf::st_point())
+  }
+  sf::st_point(c(lon, lat))
 }
 
 #' @export
 print.step_sfc_point <-
   function(x, width = max(20, options()$width - 30), ...) {
     title <- "Point geometry from "
+    if (is_trained(x)) {
+      untr_obj <- NULL
+    } else {
+      untr_obj <- unname(x$terms)
+    }
     print_step(
-      unname(x$columns),
       unname(x$terms),
+      untr_obj,
       x$trained,
       width = width,
       title = title
@@ -190,8 +191,8 @@ print.step_sfc_point <-
 tidy.step_sfc_point <- function(x, ...) {
   if (is_trained(x)) {
     res <- tibble(
-      terms = unname(x$columns),
-      argument = names(x$columns)
+      terms = unname(x$terms),
+      argument = names(x$terms)
     )
   } else {
     res <- tibble(

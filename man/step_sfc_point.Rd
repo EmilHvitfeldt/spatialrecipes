@@ -12,7 +12,6 @@ step_sfc_point(
   trained = FALSE,
   crs = 4326,
   name = "geometry",
-  columns = NULL,
   keep_original_cols = FALSE,
   skip = FALSE,
   id = rand_id("sfc_point")
@@ -35,10 +34,8 @@ been estimated.}
 accepted by \code{\link[sf:st_crs]{sf::st_crs()}}. Defaults to \code{4326}, WGS 84 longitude and
 latitude in degrees.}
 
-\item{name}{A single string, the name of the new geometry column.}
-
-\item{columns}{A named character vector with the names of the longitude and
-latitude columns, populated by \code{prep()}.}
+\item{name}{A single string, the name of the new geometry column. Defaults
+to \code{"geometry"}.}
 
 \item{keep_original_cols}{A logical to keep the original longitude and
 latitude columns after the geometry column is created. Defaults to \code{FALSE}.}
@@ -61,14 +58,7 @@ combine a longitude column and a latitude column into a single point
 geometry column (an \code{sfc} column, see \code{\link[sf:st_sfc]{sf::st_sfc()}}).
 }
 \details{
-The new column is a plain \code{sfc} column in a tibble. The data does not need to
-be an \code{sf} object, and the result of \code{\link[recipes:bake]{recipes::bake()}} is always a tibble. Use
-\code{\link[sf:st_as_sf]{sf::st_as_sf()}} on the baked data if you need an \code{sf} object.
-
 Rows where either coordinate is missing get an empty point (\verb{POINT EMPTY}).
-
-The new column has the type \code{"other"} in the recipe, so it is not matched by
-selectors such as \code{\link[recipes:all_numeric_predictors]{recipes::all_numeric_predictors()}}. Select it by name.
 }
 \section{Tidying}{
 When you \code{\link[recipes:tidy.recipe]{tidy()}} this step, a tibble is returned with

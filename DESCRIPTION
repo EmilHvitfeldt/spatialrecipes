@@ -20,7 +20,8 @@ Imports:
     generics (>= 0.1.0),
     rlang (>= 1.1.0),
     sf,
-    tibble
+    tibble,
+    vctrs
 Suggests:
     covr,
     modeldata,
