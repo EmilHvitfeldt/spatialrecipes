@@ -151,18 +151,16 @@ bake.step_sfc_point <- function(object, new_data, ...) {
   col_names <- unname(object$columns)
   check_new_data(col_names, object, new_data)
 
-  coords <- data.frame(
-    lon = new_data[[object$columns[["lon"]]]],
-    lat = new_data[[object$columns[["lat"]]]]
-  )
-  geometry <- sf::st_geometry(
-    sf::st_as_sf(
-      coords,
-      coords = c("lon", "lat"),
-      crs = object$crs,
-      na.fail = FALSE
-    )
-  )
+  lon <- as.numeric(new_data[[object$columns[["lon"]]]])
+  lat <- as.numeric(new_data[[object$columns[["lat"]]]])
+  points <- lapply(seq_along(lon), function(i) {
+    if (is.na(lon[i]) || is.na(lat[i])) {
+      sf::st_point()
+    } else {
+      sf::st_point(c(lon[i], lat[i]))
+    }
+  })
+  geometry <- sf::st_sfc(points, crs = object$crs)
 
   res <- tibble::new_tibble(
     rlang::set_names(list(geometry), object$name),
