@@ -35,6 +35,12 @@ By contributing to this project, you agree to abide by its terms.
 - [`step_sfc_point()`](https://emilhvitfeldt.github.io/spatialrecipes/reference/step_sfc_point.md)
   : Create point geometries from longitude and latitude
 
+## Selectors
+
+- [`all_geometry()`](https://emilhvitfeldt.github.io/spatialrecipes/reference/all_geometry.md)
+  [`all_geometry_predictors()`](https://emilhvitfeldt.github.io/spatialrecipes/reference/all_geometry.md)
+  : Select geometry columns
+
 ## Developer tools
 
 - [`required_pkgs(`*`<step_sfc_point>`*`)`](https://emilhvitfeldt.github.io/spatialrecipes/reference/required_pkgs.spatialrecipes.md)

@@ -137,8 +137,8 @@ tidy(rec, number = 1)
 #> # A tibble: 2 × 3
 #>   terms     argument id             
 #>   <chr>     <chr>    <chr>          
-#> 1 Longitude lon      sfc_point_SwlKL
-#> 2 Latitude  lat      sfc_point_SwlKL
+#> 1 Longitude lon      sfc_point_UUEdL
+#> 2 Latitude  lat      sfc_point_UUEdL
 
 # Reference data for distance, nearest, count and join steps can be derived
 # from ames itself. Hold out some homes as reference points so they do not

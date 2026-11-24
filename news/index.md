@@ -4,6 +4,13 @@
 
 - Initial CRAN submission.
 
+- [`all_geometry()`](https://emilhvitfeldt.github.io/spatialrecipes/reference/all_geometry.md)
+  and
+  [`all_geometry_predictors()`](https://emilhvitfeldt.github.io/spatialrecipes/reference/all_geometry.md)
+  are new selectors that match `sfc` columns, which recipes otherwise
+  types as `"other"`.
+  ([\#2](https://github.com/EmilHvitfeldt/spatialrecipes/issues/2))
+
 - [`step_sfc_point()`](https://emilhvitfeldt.github.io/spatialrecipes/reference/step_sfc_point.md)
   is a new step that combines a longitude column and a latitude column
   into a point geometry (`sfc`) column.
