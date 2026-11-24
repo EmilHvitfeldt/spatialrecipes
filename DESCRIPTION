@@ -17,6 +17,7 @@ Depends:
     R (>= 4.1),
     recipes (>= 1.1.0)
 Imports:
+    cli,
     generics (>= 0.1.0),
     rlang (>= 1.1.0),
     sf,
