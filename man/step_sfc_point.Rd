@@ -2,7 +2,6 @@
 % Please edit documentation in R/sfc_point.R
 \name{step_sfc_point}
 \alias{step_sfc_point}
-\alias{tidy.step_sfc_point}
 \title{Create point geometries from longitude and latitude}
 \usage{
 step_sfc_point(
@@ -51,9 +50,6 @@ outcome variable(s)). Care should be taken when using \code{skip = TRUE} as it
 may affect the computations for subsequent operations.}
 
 \item{id}{A character string that is unique to this step to identify it.}
-
-\item{...}{One or more selector functions to choose variables for this step.
-See \code{\link[recipes:selections]{selections()}} for more details.}
 }
 \value{
 An updated version of \code{recipe} with the new step added to the

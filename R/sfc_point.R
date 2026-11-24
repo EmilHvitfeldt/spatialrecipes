@@ -188,8 +188,6 @@ print.step_sfc_point <-
     invisible(x)
   }
 
-#' @rdname step_sfc_point
-#' @usage NULL
 #' @export
 tidy.step_sfc_point <- function(x, ...) {
   if (is_trained(x)) {
