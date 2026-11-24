@@ -24,6 +24,7 @@ Imports:
     vctrs
 Suggests:
     covr,
+    dials (>= 1.2.0),
     modeldata,
     testthat (>= 3.0.0),
     withr
