@@ -98,6 +98,31 @@ test_that("missing coordinates give empty points", {
   expect_identical(sf::st_is_empty(res$geometry), c(FALSE, TRUE, TRUE))
 })
 
+test_that("ames reference helpers are disjoint from the transformed rows", {
+  split <- ames_reference_split(n = 100)
+  ref <- split$reference
+
+  expect_s3_class(ref, "sf")
+  expect_identical(nrow(ref), 100L)
+  expect_named(ref, c("Sale_Price", "Year_Built", "Neighborhood", "geometry"))
+
+  rec <- recipe(Sale_Price ~ Longitude + Latitude, data = split$data) |>
+    step_sfc_point(lon = Longitude, lat = Latitude) |>
+    prep()
+  res <- bake(rec, new_data = NULL)
+
+  dist <- sf::st_distance(res$geometry[1:200], sf::st_geometry(ref))
+  expect_gt(as.numeric(min(dist)), 0)
+
+  polys <- ames_reference_polygons()
+  expect_all_equal(as.character(sf::st_geometry_type(polys)), "POLYGON")
+  expect_all_true(polys$Neighborhood %in% levels(modeldata::ames$Neighborhood))
+
+  fixed <- ames_fixed_points()
+  expect_s3_class(fixed, "sfc_POINT")
+  expect_identical(length(fixed), 2L)
+})
+
 test_that("selecting more than one column errors", {
   df <- tibble::tibble(y = 1:2, lon = 1:2, lat = 3:4, other = 5:6)
   rec <- recipe(y ~ ., data = df)
