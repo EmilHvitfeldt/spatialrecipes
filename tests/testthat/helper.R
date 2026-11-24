@@ -46,3 +46,12 @@ ames_fixed_points <- function() {
     crs = 4326
   )
 }
+
+# Points in a projected (or missing) CRS, with known planar distances.
+planar_points <- function(xy, crs = 3857) {
+  sf::st_sfc(lapply(seq_len(nrow(xy)), \(i) sf::st_point(xy[i, ])), crs = crs)
+}
+
+geometry_data <- function(geometry) {
+  tibble::tibble(y = seq_along(geometry), geometry = geometry)
+}
