@@ -10,12 +10,12 @@ test_that("step_sfc_point() creates a point geometry column", {
   expect_s3_class(res, "tbl_df")
   expect_false(inherits(res, "sf"))
   expect_s3_class(res$geometry, "sfc_POINT")
-  expect_equal(sf::st_crs(res$geometry), sf::st_crs(4326))
+  expect_identical(sf::st_crs(res$geometry), sf::st_crs(4326))
 
   expected <- sf::st_geometry(
     sf::st_as_sf(ames, coords = c("Longitude", "Latitude"), crs = 4326)
   )
-  expect_equal(res$geometry, expected)
+  expect_identical(res$geometry, expected)
 })
 
 test_that("step_sfc_point() works on new data", {
@@ -27,7 +27,7 @@ test_that("step_sfc_point() works on new data", {
   res <- bake(rec, new_data = ames[101:110, ])
 
   expect_identical(nrow(res), 10L)
-  expect_equal(
+  expect_identical(
     sf::st_coordinates(res$geometry)[, "X"],
     ames$Longitude[101:110]
   )
@@ -57,7 +57,7 @@ test_that("crs and name arguments work", {
     bake(new_data = NULL)
 
   expect_named(res, c("Sale_Price", "loc"))
-  expect_equal(sf::st_crs(res$loc), sf::st_crs(4269))
+  expect_identical(sf::st_crs(res$loc), sf::st_crs(4269))
 })
 
 test_that("step_sfc_point() works on sf input and returns a tibble", {
@@ -173,6 +173,16 @@ test_that("required_pkgs() includes sf", {
   )
 })
 
+test_that("make_point() and make_points() handle missing values", {
+  expect_identical(make_point(1, 2), sf::st_point(c(1, 2)))
+  expect_identical(make_point(NA, 2), sf::st_point())
+  expect_identical(make_point(1, NA), sf::st_point())
+
+  res <- make_points(c(1, NA), c(2, 3), crs = 4326)
+  expect_s3_class(res, "sfc_POINT")
+  expect_identical(sf::st_is_empty(res), c(FALSE, TRUE))
+})
+
 # Infrastructure ---------------------------------------------------------------
 
 test_that("printing", {
@@ -181,4 +191,25 @@ test_that("printing", {
 
   expect_snapshot(print(rec))
   expect_snapshot(prep(rec))
+})
+
+test_that("bake method errors when needed non-standard role columns are missing", {
+  df <- tibble::tibble(y = 1:2, lon = c(1, 2), lat = c(3, 4))
+  rec <- recipe(y ~ ., data = df) |>
+    step_sfc_point(lon = lon, lat = lat) |>
+    update_role(lon, lat, new_role = "potato") |>
+    update_role_requirements(role = "potato", bake = FALSE)
+  rec <- prep(rec, training = df)
+
+  expect_snapshot(error = TRUE, bake(rec, new_data = df[, "y"]))
+})
+
+test_that("0 and 1 rows data work in bake method", {
+  df <- tibble::tibble(y = 1:2, lon = c(1, 2), lat = c(3, 4))
+  rec <- recipe(y ~ ., data = df) |>
+    step_sfc_point(lon = lon, lat = lat) |>
+    prep()
+
+  expect_identical(nrow(bake(rec, df[1, ])), 1L)
+  expect_identical(nrow(bake(rec, df[0, ])), 0L)
 })

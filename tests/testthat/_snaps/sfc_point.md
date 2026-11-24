@@ -88,3 +88,11 @@
       -- Operations 
       * Point geometry from: Longitude Latitude | Trained
 
+# bake method errors when needed non-standard role columns are missing
+
+    Code
+      bake(rec, new_data = df[, "y"])
+    Condition
+      Error in `step_sfc_point()`:
+      ! The following required columns are missing from `new_data`: lon and lat.
+
