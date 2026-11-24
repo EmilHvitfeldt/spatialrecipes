@@ -25,7 +25,8 @@ Imports:
 Suggests:
     covr,
     modeldata,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    withr
 Config/Needs/website: tidyverse/tidytemplate
 Config/testthat/edition: 3
 Encoding: UTF-8

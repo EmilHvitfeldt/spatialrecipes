@@ -45,6 +45,36 @@
 #' bake(rec, new_data = NULL)
 #'
 #' tidy(rec, number = 1)
+#'
+#' # Reference data for distance, nearest, count and join steps can be derived
+#' # from ames itself. Hold out some homes as reference points so they do not
+#' # overlap the rows being transformed (otherwise nearest distances are 0).
+#' pts <- sf::st_as_sf(
+#'   ames[, c("Sale_Price", "Year_Built", "Neighborhood", "Longitude", "Latitude")],
+#'   coords = c("Longitude", "Latitude"),
+#'   crs = 4326
+#' )
+#' held_out <- sample(nrow(ames), 100)
+#' reference_points <- pts[held_out, ]
+#' training <- ames[-held_out, ]
+#'
+#' # Convex hull of the homes in each neighborhood with at least 3 homes
+#' by_hood <- split(sf::st_geometry(pts), pts$Neighborhood)
+#' by_hood <- by_hood[lengths(by_hood) >= 3]
+#' reference_polygons <- sf::st_sf(
+#'   Neighborhood = names(by_hood),
+#'   geometry = sf::st_sfc(
+#'     lapply(by_hood, \(x) sf::st_convex_hull(sf::st_union(x))[[1]]),
+#'     crs = 4326
+#'   )
+#' )
+#'
+#' # Hand-picked points: Iowa State University campus and downtown Ames
+#' fixed_points <- sf::st_sfc(
+#'   sf::st_point(c(-93.6465, 42.0267)),
+#'   sf::st_point(c(-93.6199, 42.0347)),
+#'   crs = 4326
+#' )
 step_sfc_point <-
   function(
     recipe,
