@@ -3,6 +3,13 @@
 Recipe-adjacent packages always list themselves as a required package so
 that the steps can function properly within parallel processing schemes.
 
+## Usage
+
+``` r
+# S3 method for class 'step_sfc_point'
+required_pkgs(x, ...)
+```
+
 ## Arguments
 
 - x:

@@ -104,6 +104,9 @@ desirability:
 - Never put code in a `test-{name}.R` file outside of a `test_that()`
   block. Instead, use `tests/testthat/helper.R` or
   `tests/testthat/helper-{name}.R`.
+- Always use `expect_identical()` over `expect_equal()`. Only fall back
+  to `expect_equal()` with an explicit `tolerance` when exact comparison
+  is genuinely impossible.
 - Avoid `expect_true()` and `expect_false()` in favor of a specific
   expectation with a better failure message. A few expectations in newer
   releases that you might not know about are `expect_all_true()`,

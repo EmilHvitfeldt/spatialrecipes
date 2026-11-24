@@ -102,6 +102,7 @@
 <li>If there are existing tests, place new tests next to similar existing tests.</li>
 <li>Strive to keep your tests minimal with few comments.</li>
 <li>Never put code in a <code>test-{name}.R</code> file outside of a <code>test_that()</code> block. Instead, use <code>tests/testthat/helper.R</code> or <code>tests/testthat/helper-{name}.R</code>.</li>
+<li>Always use <code>expect_identical()</code> over <code>expect_equal()</code>. Only fall back to <code>expect_equal()</code> with an explicit <code>tolerance</code> when exact comparison is genuinely impossible.</li>
 <li>Avoid <code>expect_true()</code> and <code>expect_false()</code> in favor of a specific expectation with a better failure message. A few expectations in newer releases that you might not know about are <code>expect_all_true()</code>, <code>expect_all_equal()</code>, and <code>expect_r6_class()</code>.</li>
 <li>When testing errors and warnings:
 <ul><li>Only use <code>expect_error()</code> or <code>expect_warning()</code> if the error or warning has a known class.</li>
