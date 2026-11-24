@@ -2,7 +2,7 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles: {}
-last_built: 2026-11-24T18:12Z
+last_built: 2026-11-24T20:19Z
 urls:
   reference: https://emilhvitfeldt.github.io/spatialrecipes/reference
   article: https://emilhvitfeldt.github.io/spatialrecipes/articles
