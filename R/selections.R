@@ -4,13 +4,8 @@
 #' role. `all_geometry_predictors()` selects all `sfc` columns that have the
 #' `"predictor"` role.
 #'
-#' recipes types an `sfc` column as `"other"`, so selectors such as
-#' [recipes::all_numeric_predictors()] never match it. These selectors match on
-#' the `sfc` class instead, so unlike `has_type("other")` they do not match
-#' other list-columns.
-#'
-#' Loading spatialrecipes registers the data type `"sfc"` for `sfc` columns, so
-#' `has_type("other")` no longer matches them in any recipe.
+#' recipes types an `sfc` column as `"other"`, which would also match any other
+#' list-column. These selectors match on the `sfc` class instead.
 #'
 #' @return A selector function for use in recipe steps.
 #' @seealso [recipes::has_role()], [recipes::has_type()]

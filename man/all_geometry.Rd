@@ -18,13 +18,8 @@ role. \code{all_geometry_predictors()} selects all \code{sfc} columns that have 
 \code{"predictor"} role.
 }
 \details{
-recipes types an \code{sfc} column as \code{"other"}, so selectors such as
-\code{\link[recipes:all_numeric_predictors]{recipes::all_numeric_predictors()}} never match it. These selectors match on
-the \code{sfc} class instead, so unlike \code{has_type("other")} they do not match
-other list-columns.
-
-Loading spatialrecipes registers the data type \code{"sfc"} for \code{sfc} columns, so
-\code{has_type("other")} no longer matches them in any recipe.
+recipes types an \code{sfc} column as \code{"other"}, which would also match any other
+list-column. These selectors match on the \code{sfc} class instead.
 }
 \examples{
 \dontshow{if (rlang::is_installed("modeldata")) withAutoprint(\{ # examplesIf}
