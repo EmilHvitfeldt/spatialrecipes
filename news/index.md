@@ -15,3 +15,9 @@
   is a new step that combines a longitude column and a latitude column
   into a point geometry (`sfc`) column.
   ([\#1](https://github.com/EmilHvitfeldt/spatialrecipes/issues/1))
+
+- [`step_spatial_distance()`](https://emilhvitfeldt.github.io/spatialrecipes/reference/step_spatial_distance.md)
+  is a new step that computes the distance from point geometry columns
+  to a set of reference points or to a second geometry column, using
+  Euclidean, Manhattan or haversine distances.
+  ([\#6](https://github.com/EmilHvitfeldt/spatialrecipes/issues/6))

@@ -8,6 +8,9 @@ that the steps can function properly within parallel processing schemes.
 ``` r
 # S3 method for class 'step_sfc_point'
 required_pkgs(x, ...)
+
+# S3 method for class 'step_spatial_distance'
+required_pkgs(x, ...)
 ```
 
 ## Arguments
