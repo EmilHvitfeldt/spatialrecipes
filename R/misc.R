@@ -91,67 +91,95 @@ check_reference <- function(ref, arg = "ref", call = rlang::caller_env()) {
       call = call
     )
   }
-  check_points(ref, arg, call = call)
+  check_points(rlang::list2(!!arg := ref), arg, call = call)
   ref
 }
 
-check_points <- function(
-  x,
-  label,
-  call = rlang::caller_env()
-) {
-  types <- as.character(sf::st_geometry_type(x))
-  bad <- types != "POINT" & !sf::st_is_empty(x)
-  if (any(bad)) {
-    cli::cli_abort(
-      c(
-        "{.field {label}} must only contain point geometries.",
-        x = "Found {.val {unique(types[bad])}}.",
-        i = "Distances to lines and polygons are not supported yet."
-      ),
-      call = call
-    )
+# Checks that every column in `cols` of `data` only contains points.
+check_points <- function(data, cols, call = rlang::caller_env()) {
+  for (col in cols) {
+    x <- data[[col]]
+    types <- as.character(sf::st_geometry_type(x))
+    bad <- types != "POINT" & !sf::st_is_empty(x)
+    if (any(bad)) {
+      cli::cli_abort(
+        c(
+          "{.field {col}} must only contain point geometries.",
+          x = "Found {.val {unique(types[bad])}}.",
+          i = "Distances to lines and polygons are not supported yet."
+        ),
+        call = call
+      )
+    }
   }
-  invisible(x)
+  invisible(data)
 }
 
-reference_in_crs <- function(ref, crs, col, call = rlang::caller_env()) {
+# `ref` in the CRS of each recorded column CRS in `crs`, as a named list.
+references_in_crs <- function(ref, crs, call = rlang::caller_env()) {
   ref_crs <- sf::st_crs(ref)
-  if (is.na(crs) != is.na(ref_crs)) {
-    cli::cli_abort(
-      c(
-        "{.arg ref} and column {.field {col}} must either both have a CRS or both have none.",
-        i = "{.arg ref}: {crs_label(ref_crs)}.",
-        i = "{.field {col}}: {crs_label(crs)}."
-      ),
-      call = call
-    )
+  out <- list()
+  for (col in names(crs)) {
+    col_crs <- crs[[col]]
+    if (is.na(col_crs) != is.na(ref_crs)) {
+      cli::cli_abort(
+        c(
+          "{.arg ref} and column {.field {col}} must either both have a CRS or both have none.",
+          i = "{.arg ref}: {crs_label(ref_crs)}.",
+          i = "{.field {col}}: {crs_label(col_crs)}."
+        ),
+        call = call
+      )
+    }
+    if (is.na(col_crs) || crs_equal(ref_crs, col_crs)) {
+      out[[col]] <- ref
+    } else {
+      out[[col]] <- sf::st_transform(ref, col_crs)
+    }
   }
-  if (is.na(crs) || crs_equal(ref_crs, crs)) {
-    return(ref)
-  }
-  sf::st_transform(ref, crs)
+  out
 }
 
-check_metric_crs <- function(metric, crs, col, call = rlang::caller_env()) {
-  longlat <- isTRUE(sf::st_is_longlat(crs))
-  if (metric %in% c("euclidean", "manhattan") && longlat) {
-    cli::cli_abort(
-      c(
-        "{.val {metric}} distances need a projected CRS, but {.field {col}} uses longitude and latitude.",
-        i = "Use {.code metric = \"haversine\"}, or {.fn sf::st_transform} the data to a projected CRS."
-      ),
-      call = call
-    )
+# Checks that the recorded CRS of every column in `cols` equals the one of `to`.
+check_same_crs <- function(crs, cols, to, call = rlang::caller_env()) {
+  for (col in cols) {
+    if (!crs_equal(crs[[col]], crs[[to]])) {
+      cli::cli_abort(
+        c(
+          "Column {.field {col}} and {.field {to}} must have the same CRS.",
+          i = "{.field {col}}: {crs_label(crs[[col]])}.",
+          i = "{.field {to}}: {crs_label(crs[[to]])}.",
+          i = "Use {.fn sf::st_transform} to put them in the same CRS."
+        ),
+        call = call
+      )
+    }
   }
-  if (metric == "haversine" && !longlat) {
-    cli::cli_abort(
-      c(
-        "{.val {metric}} distances need longitude and latitude coordinates, but {.field {col}} has {crs_label(crs)}.",
-        i = "Use {.code metric = \"euclidean\"} or {.code metric = \"manhattan\"}, or {.fn sf::st_transform} the data to a geographic CRS."
-      ),
-      call = call
-    )
+  invisible(crs)
+}
+
+# Checks that the recorded CRS of every column suits `metric`.
+check_metric_crs <- function(metric, crs, call = rlang::caller_env()) {
+  for (col in names(crs)) {
+    longlat <- isTRUE(sf::st_is_longlat(crs[[col]]))
+    if (metric %in% c("euclidean", "manhattan") && longlat) {
+      cli::cli_abort(
+        c(
+          "{.val {metric}} distances need a projected CRS, but {.field {col}} uses longitude and latitude.",
+          i = "Use {.code metric = \"haversine\"}, or {.fn sf::st_transform} the data to a projected CRS."
+        ),
+        call = call
+      )
+    }
+    if (metric == "haversine" && !longlat) {
+      cli::cli_abort(
+        c(
+          "{.val {metric}} distances need longitude and latitude coordinates, but {.field {col}} has {crs_label(crs[[col]])}.",
+          i = "Use {.code metric = \"euclidean\"} or {.code metric = \"manhattan\"}, or {.fn sf::st_transform} the data to a geographic CRS."
+        ),
+        call = call
+      )
+    }
   }
   invisible(crs)
 }

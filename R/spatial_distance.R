@@ -45,8 +45,7 @@
 #'   `ref`, named `{column}_dist_{i}` where `i` is the position of the point in
 #'   `ref`. One reference point gives one column and five reference points give
 #'   five, each holding the distance from that row to that point. The distances
-#'   to all points are computed for every row, so a large `ref` is costly in
-#'   both time and memory.
+#'   to all points are computed for every row.
 #' - With `ref_col`, every selected column gets a single new column named
 #'   `{column}_dist`. The distance is computed row by row, between the point in
 #'   the selected column and the point in `ref_col` on the same row.
@@ -194,30 +193,14 @@ prep.step_spatial_distance <- function(x, training, info = NULL, ...) {
   columns <- setdiff(columns, ref_col)
 
   crs <- record_crs(training, c(columns, ref_col))
-  for (col in columns) {
-    check_points(training[[col]], col)
-    check_metric_crs(x$metric, crs[[col]], col)
-  }
+  check_points(training, c(columns, ref_col))
+  check_metric_crs(x$metric, crs)
 
   ref <- NULL
   if (is.null(ref_col)) {
-    ref <- list()
-    for (col in columns) {
-      ref[[col]] <- reference_in_crs(x$ref, crs[[col]], col)
-    }
+    ref <- references_in_crs(x$ref, crs)
   } else {
-    check_points(training[[ref_col]], ref_col)
-    check_metric_crs(x$metric, crs[[ref_col]], ref_col)
-    for (col in columns) {
-      if (!crs_equal(crs[[col]], crs[[ref_col]])) {
-        cli::cli_abort(c(
-          "Column {.field {col}} and {.field {ref_col}} must have the same CRS.",
-          i = "{.field {col}}: {crs_label(crs[[col]])}.",
-          i = "{.field {ref_col}}: {crs_label(crs[[ref_col]])}.",
-          i = "Use {.fn sf::st_transform} to put them in the same CRS."
-        ))
-      }
-    }
+    check_same_crs(crs, columns, ref_col)
   }
 
   step_spatial_distance_new(
@@ -240,9 +223,7 @@ bake.step_spatial_distance <- function(object, new_data, ...) {
   col_names <- c(object$columns, object$ref_col)
   check_new_data(col_names, object, new_data)
   check_crs(new_data, object$crs)
-  for (col in col_names) {
-    check_points(new_data[[col]], col)
-  }
+  check_points(new_data, col_names)
 
   res <- list()
   for (col in object$columns) {

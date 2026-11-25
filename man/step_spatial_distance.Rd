@@ -89,8 +89,7 @@ on what is passed to the step:
 \code{ref}, named \verb{\{column\}_dist_\{i\}} where \code{i} is the position of the point in
 \code{ref}. One reference point gives one column and five reference points give
 five, each holding the distance from that row to that point. The distances
-to all points are computed for every row, so a large \code{ref} is costly in
-both time and memory.
+to all points are computed for every row.
 \item With \code{ref_col}, every selected column gets a single new column named
 \verb{\{column\}_dist}. The distance is computed row by row, between the point in
 the selected column and the point in \code{ref_col} on the same row.
