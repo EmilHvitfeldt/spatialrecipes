@@ -9,7 +9,7 @@ step_spatial_distance(
   ...,
   ref = NULL,
   ref_col = NULL,
-  metric = c("euclidean", "haversine", "geodesic", "manhattan"),
+  metric = c("euclidean", "haversine", "manhattan"),
   aggregate = c("nearest", "mean", "all"),
   role = "predictor",
   trained = FALSE,
@@ -38,12 +38,12 @@ distances to, row by row. It must select exactly one \code{sfc} column with the
 same CRS as the columns in \code{...}, and is never itself used as a column to
 measure from. Exactly one of \code{ref} and \code{ref_col} must be given.}
 
-\item{metric}{A single string, one of \code{"euclidean"}, \code{"haversine"},
-\code{"geodesic"} or \code{"manhattan"}. \code{"euclidean"} and \code{"manhattan"} measure in
-the units of a projected (or missing) CRS and error on longitude and
-latitude coordinates. \code{"haversine"} (spherical) and \code{"geodesic"} (on the
-ellipsoid of the CRS) require longitude and latitude coordinates and return
-meters. Defaults to \code{"euclidean"}.}
+\item{metric}{A single string, one of \code{"euclidean"}, \code{"haversine"} or
+\code{"manhattan"}. \code{"euclidean"} and \code{"manhattan"} measure in the units of a
+projected (or missing) CRS and error on longitude and latitude
+coordinates. \code{"haversine"} measures great-circle distance on a sphere with
+a radius of 6371008.8 meters, requires longitude and latitude coordinates,
+and returns meters. Defaults to \code{"euclidean"}.}
 
 \item{aggregate}{How to combine the distances to the features of \code{ref}: the
 distance to the \code{"nearest"} feature, the \code{"mean"} distance, or \code{"all"}

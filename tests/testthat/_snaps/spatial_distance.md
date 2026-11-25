@@ -65,7 +65,7 @@
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
       ! "euclidean" distances need a projected CRS, but geometry uses longitude and latitude.
-      i Use `metric = "haversine"` or `metric = "geodesic"`, or `sf::st_transform()` the data to a projected CRS.
+      i Use `metric = "haversine"`, or `sf::st_transform()` the data to a projected CRS.
 
 ---
 
@@ -82,11 +82,11 @@
 
     Code
       prep(step_spatial_distance(recipe(y ~ ., data = missing_crs), geometry, ref = planar_points(
-        cbind(0, 0), crs = sf::NA_crs_), metric = "geodesic"))
+        cbind(0, 0), crs = sf::NA_crs_), metric = "haversine"))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
-      ! "geodesic" distances need longitude and latitude coordinates, but geometry has no CRS.
+      ! "haversine" distances need longitude and latitude coordinates, but geometry has no CRS.
       i Use `metric = "euclidean"` or `metric = "manhattan"`, or `sf::st_transform()` the data to a geographic CRS.
 
 # ref and column must agree on having a CRS

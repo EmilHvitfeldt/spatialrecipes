@@ -31,23 +31,19 @@ test_that("missing CRS works for planar metrics", {
   expect_identical(res$geometry_dist, 5)
 })
 
-test_that("haversine and geodesic distances match known values", {
+test_that("haversine distances match a known value", {
   data <- geometry_data(planar_points(cbind(1, 0), crs = 4326))
   ref <- planar_points(cbind(0, 0), crs = 4326)
 
-  dist <- function(metric) {
-    res <- recipe(y ~ ., data = data) |>
-      step_spatial_distance(geometry, ref = ref, metric = metric) |>
-      prep() |>
-      bake(new_data = NULL)
-    res$geometry_dist
-  }
+  res <- recipe(y ~ ., data = data) |>
+    step_spatial_distance(geometry, ref = ref, metric = "haversine") |>
+    prep() |>
+    bake(new_data = NULL)
 
-  expect_equal(dist("haversine"), 6371008.8 * pi / 180, tolerance = 1e-9)
-  expect_equal(dist("geodesic"), 6378137 * pi / 180, tolerance = 1e-9)
+  expect_equal(res$geometry_dist, 6371008.8 * pi / 180, tolerance = 1e-9)
 })
 
-test_that("haversine and geodesic agree with sf on ames", {
+test_that("haversine distances agree with sf on ames", {
   split <- ames_reference_split()
   data <- split$data[1:50, c("Sale_Price", "Longitude", "Latitude")]
   ref <- sf::st_geometry(split$reference)
@@ -57,17 +53,15 @@ test_that("haversine and geodesic agree with sf on ames", {
   geom <- bake(prep(base), new_data = NULL)$geometry
   expected <- unclass(sf::st_distance(geom, ref))
 
-  for (metric in c("haversine", "geodesic")) {
-    res <- base |>
-      step_spatial_distance(
-        all_geometry_predictors(),
-        ref = ref,
-        metric = metric
-      ) |>
-      prep() |>
-      bake(new_data = NULL)
-    expect_equal(res$geometry_dist, apply(expected, 1, min), tolerance = 5e-3)
-  }
+  res <- base |>
+    step_spatial_distance(
+      all_geometry_predictors(),
+      ref = ref,
+      metric = "haversine"
+    ) |>
+    prep() |>
+    bake(new_data = NULL)
+  expect_equal(res$geometry_dist, apply(expected, 1, min), tolerance = 1e-5)
 })
 
 test_that("aggregate options work", {
@@ -180,12 +174,6 @@ test_that("ref_col computes row-wise distances", {
     prep() |>
     bake(new_data = NULL)
   expect_named(res, c("to", "y", "from_dist"))
-})
-
-test_that("geodesic distance uses the radius of a spherical CRS", {
-  crs <- sf::st_crs("+proj=longlat +R=6370997 +no_defs")
-  f <- distance_fun("geodesic", crs)
-  expect_equal(f(0, 0, 1, 0), 6370997 * pi / 180, tolerance = 1e-9)
 })
 
 test_that("empty points give NA distances", {
@@ -323,7 +311,7 @@ test_that("metric must match the type of CRS", {
       recipe(y ~ ., data = missing_crs),
       geometry,
       ref = planar_points(cbind(0, 0), crs = sf::NA_crs_),
-      metric = "geodesic"
+      metric = "haversine"
     ))
   )
 })
@@ -464,24 +452,7 @@ test_that("distance helpers handle edge cases", {
   )
 
   expect_identical(haversine_distance(10, 20, 10, 20), 0)
-  expect_identical(
-    vincenty_distance(10, 20, 10, 20, 6378137, 1 / 298.257223563),
-    0
-  )
-  # Nearly antipodal points fall back to haversine
-  expect_equal(
-    vincenty_distance(0, 0, 179.9999, 0.0001, 6378137, 1 / 298.257223563),
-    haversine_distance(0, 0, 179.9999, 0.0001),
-    tolerance = 1e-2
-  )
-  expect_gt(
-    vincenty_distance(0, 0, 179.9, 0.1, 6378137, 1 / 298.257223563),
-    19e6
-  )
-  expect_identical(
-    vincenty_distance(NA, 0, 1, 0, 6378137, 1 / 298.257223563),
-    NA_real_
-  )
+  expect_identical(haversine_distance(NA, 0, 1, 0), NA_real_)
 })
 
 test_that("bake() errors when new data is not points", {

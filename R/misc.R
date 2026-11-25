@@ -139,12 +139,12 @@ check_metric_crs <- function(metric, crs, col, call = rlang::caller_env()) {
     cli::cli_abort(
       c(
         "{.val {metric}} distances need a projected CRS, but {.field {col}} uses longitude and latitude.",
-        i = "Use {.code metric = \"haversine\"} or {.code metric = \"geodesic\"}, or {.fn sf::st_transform} the data to a projected CRS."
+        i = "Use {.code metric = \"haversine\"}, or {.fn sf::st_transform} the data to a projected CRS."
       ),
       call = call
     )
   }
-  if (metric %in% c("haversine", "geodesic") && !longlat) {
+  if (metric == "haversine" && !longlat) {
     cli::cli_abort(
       c(
         "{.val {metric}} distances need longitude and latitude coordinates, but {.field {col}} has {crs_label(crs)}.",
@@ -171,18 +171,7 @@ distance_fun <- function(metric, crs) {
     metric,
     euclidean = \(x1, y1, x2, y2) sqrt((x2 - x1)^2 + (y2 - y1)^2),
     manhattan = \(x1, y1, x2, y2) abs(x2 - x1) + abs(y2 - y1),
-    haversine = haversine_distance,
-    geodesic = {
-      a <- as.numeric(crs$SemiMajor)
-      b <- as.numeric(crs$SemiMinor)
-      if (length(a) != 1 || length(b) != 1 || !is.finite(a) || !is.finite(b)) {
-        a <- 6378137
-        f <- 1 / 298.257223563
-      } else {
-        f <- max(0, 1 - b / a)
-      }
-      \(x1, y1, x2, y2) vincenty_distance(x1, y1, x2, y2, a, f)
-    }
+    haversine = haversine_distance
   )
 }
 
@@ -192,83 +181,6 @@ haversine_distance <- function(lon1, lat1, lon2, lat2, r = 6371008.8) {
   h <- sin((lat2 - lat1) * p / 2)^2 +
     cos(lat1 * p) * cos(lat2 * p) * sin((lon2 - lon1) * p / 2)^2
   2 * r * asin(pmin(1, sqrt(h)))
-}
-
-# Vincenty's inverse formula on an ellipsoid with semi-major axis `a` and
-# flattening `f`. Falls back to haversine for nearly antipodal points where the
-# iteration does not converge.
-vincenty_distance <- function(lon1, lat1, lon2, lat2, a, f) {
-  b <- a * (1 - f)
-  p <- pi / 180
-  u1 <- atan((1 - f) * tan(lat1 * p))
-  u2 <- atan((1 - f) * tan(lat2 * p))
-  l <- (lon2 - lon1) * p
-  sin_u1 <- sin(u1)
-  cos_u1 <- cos(u1)
-  sin_u2 <- sin(u2)
-  cos_u2 <- cos(u2)
-
-  lambda <- l
-  delta <- rep(0, length(l))
-  for (i in seq_len(200)) {
-    sin_lambda <- sin(lambda)
-    cos_lambda <- cos(lambda)
-    sin_sigma <- sqrt(
-      (cos_u2 * sin_lambda)^2 +
-        (cos_u1 * sin_u2 - sin_u1 * cos_u2 * cos_lambda)^2
-    )
-    cos_sigma <- sin_u1 * sin_u2 + cos_u1 * cos_u2 * cos_lambda
-    sigma <- atan2(sin_sigma, cos_sigma)
-    sin_alpha <- ifelse(
-      sin_sigma == 0,
-      0,
-      cos_u1 * cos_u2 * sin_lambda / sin_sigma
-    )
-    cos_sq_alpha <- 1 - sin_alpha^2
-    cos_2sigma_m <- ifelse(
-      abs(cos_sq_alpha) < 1e-15,
-      0,
-      cos_sigma - 2 * sin_u1 * sin_u2 / cos_sq_alpha
-    )
-    cc <- f / 16 * cos_sq_alpha * (4 + f * (4 - 3 * cos_sq_alpha))
-    lambda_new <- l +
-      (1 - cc) *
-        f *
-        sin_alpha *
-        (sigma +
-          cc *
-            sin_sigma *
-            (cos_2sigma_m + cc * cos_sigma * (-1 + 2 * cos_2sigma_m^2)))
-    delta <- abs(lambda_new - lambda)
-    lambda <- lambda_new
-    if (all(delta < 1e-12, na.rm = TRUE)) {
-      break
-    }
-  }
-
-  u_sq <- cos_sq_alpha * (a^2 - b^2) / b^2
-  big_a <- 1 + u_sq / 16384 * (4096 + u_sq * (-768 + u_sq * (320 - 175 * u_sq)))
-  big_b <- u_sq / 1024 * (256 + u_sq * (-128 + u_sq * (74 - 47 * u_sq)))
-  delta_sigma <- big_b *
-    sin_sigma *
-    (cos_2sigma_m +
-      big_b /
-        4 *
-        (cos_sigma *
-          (-1 + 2 * cos_2sigma_m^2) -
-          big_b /
-            6 *
-            cos_2sigma_m *
-            (-3 + 4 * sin_sigma^2) *
-            (-3 + 4 * cos_2sigma_m^2)))
-  s <- b * big_a * (sigma - delta_sigma)
-
-  finite_input <- !is.na(lon1 + lat1 + lon2 + lat2)
-  bad <- finite_input & (is.na(s) | is.na(delta) | delta >= 1e-9)
-  if (any(bad)) {
-    s[bad] <- haversine_distance(lon1[bad], lat1[bad], lon2[bad], lat2[bad])
-  }
-  s
 }
 
 # Distances from every row of `xy` to every row of `ref_xy`, combined across

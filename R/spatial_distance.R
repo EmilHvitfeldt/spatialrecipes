@@ -17,12 +17,12 @@
 #'   distances to, row by row. It must select exactly one `sfc` column with the
 #'   same CRS as the columns in `...`, and is never itself used as a column to
 #'   measure from. Exactly one of `ref` and `ref_col` must be given.
-#' @param metric A single string, one of `"euclidean"`, `"haversine"`,
-#'   `"geodesic"` or `"manhattan"`. `"euclidean"` and `"manhattan"` measure in
-#'   the units of a projected (or missing) CRS and error on longitude and
-#'   latitude coordinates. `"haversine"` (spherical) and `"geodesic"` (on the
-#'   ellipsoid of the CRS) require longitude and latitude coordinates and return
-#'   meters. Defaults to `"euclidean"`.
+#' @param metric A single string, one of `"euclidean"`, `"haversine"` or
+#'   `"manhattan"`. `"euclidean"` and `"manhattan"` measure in the units of a
+#'   projected (or missing) CRS and error on longitude and latitude
+#'   coordinates. `"haversine"` measures great-circle distance on a sphere with
+#'   a radius of 6371008.8 meters, requires longitude and latitude coordinates,
+#'   and returns meters. Defaults to `"euclidean"`.
 #' @param aggregate How to combine the distances to the features of `ref`: the
 #'   distance to the `"nearest"` feature, the `"mean"` distance, or `"all"`
 #'   distances, one column per feature of `ref`. Defaults to `"nearest"`. Can't
@@ -106,7 +106,7 @@ step_spatial_distance <-
     ...,
     ref = NULL,
     ref_col = NULL,
-    metric = c("euclidean", "haversine", "geodesic", "manhattan"),
+    metric = c("euclidean", "haversine", "manhattan"),
     aggregate = c("nearest", "mean", "all"),
     role = "predictor",
     trained = FALSE,
