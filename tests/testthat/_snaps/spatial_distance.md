@@ -59,7 +59,7 @@
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
       ! "euclidean" distances need a projected CRS, but geometry uses longitude and latitude.
-      i Use `metric = "haversine"`, or `sf::st_transform()` the data to a projected CRS.
+      i Use `metric = "haversine"`, or use `step_spatial_transform()` to transform the data to a projected CRS.
 
 ---
 
@@ -70,7 +70,7 @@
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
       ! "haversine" distances need longitude and latitude coordinates, but geometry has EPSG:3857.
-      i Use `metric = "euclidean"` or `metric = "manhattan"`, or `sf::st_transform()` the data to a geographic CRS.
+      i Use `metric = "euclidean"` or `metric = "manhattan"`, or use `step_spatial_transform()` to transform the data to a geographic CRS.
 
 ---
 
@@ -81,7 +81,7 @@
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
       ! "haversine" distances need longitude and latitude coordinates, but geometry has no CRS.
-      i Use `metric = "euclidean"` or `metric = "manhattan"`, or `sf::st_transform()` the data to a geographic CRS.
+      i Use `metric = "euclidean"` or `metric = "manhattan"`, or use `step_spatial_transform()` to transform the data to a geographic CRS.
 
 # ref and column must agree on having a CRS
 
@@ -106,7 +106,7 @@
       ! Column from and to must have the same CRS.
       i from: EPSG:3857.
       i to: EPSG:32615.
-      i Use `sf::st_transform()` to put them in the same CRS.
+      i Use `step_spatial_transform()` or `sf::st_transform()` to put them in the same CRS.
 
 # non-point and non-geometry columns error
 
