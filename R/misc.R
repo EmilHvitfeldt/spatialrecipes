@@ -70,6 +70,48 @@ crs_label <- function(crs) {
   "unnamed CRS"
 }
 
+# Parses a user-supplied target CRS into an `sf::crs` object.
+check_target_crs <- function(crs, arg = "crs", call = rlang::caller_env()) {
+  parent <- NULL
+  valid <- inherits(crs, "crs") ||
+    ((is.numeric(crs) || is.character(crs)) && length(crs) == 1)
+  out <- tryCatch(
+    if (valid) sf::st_crs(crs) else NULL,
+    error = function(e) {
+      parent <<- e
+      NULL
+    }
+  )
+  if (is.null(out) || is.na(out)) {
+    cli::cli_abort(
+      c(
+        "{.arg {arg}} must be a single CRS that {.fn sf::st_crs} understands.",
+        i = "For example an EPSG code like {.code 26915} or a string like {.code \"EPSG:26915\"}."
+      ),
+      parent = parent,
+      call = call
+    )
+  }
+  out
+}
+
+# Checks that every recorded CRS in `crs` is known.
+check_has_crs <- function(crs, call = rlang::caller_env()) {
+  for (col in names(crs)) {
+    if (is.na(crs[[col]])) {
+      cli::cli_abort(
+        c(
+          "Column {.field {col}} has no CRS, so it can't be transformed.",
+          i = "Use {.fn sf::st_set_crs} to set the CRS of the data first."
+        ),
+        class = "spatialrecipes_crs_missing",
+        call = call
+      )
+    }
+  }
+  invisible(crs)
+}
+
 # Reference and distance helpers ----------------------------------------------
 
 check_reference <- function(ref, arg = "ref", call = rlang::caller_env()) {
@@ -149,7 +191,7 @@ check_same_crs <- function(crs, cols, to, call = rlang::caller_env()) {
           "Column {.field {col}} and {.field {to}} must have the same CRS.",
           i = "{.field {col}}: {crs_label(crs[[col]])}.",
           i = "{.field {to}}: {crs_label(crs[[to]])}.",
-          i = "Use {.fn sf::st_transform} to put them in the same CRS."
+          i = "Use {.fn step_spatial_transform} or {.fn sf::st_transform} to put them in the same CRS."
         ),
         call = call
       )
@@ -166,7 +208,7 @@ check_metric_crs <- function(metric, crs, call = rlang::caller_env()) {
       cli::cli_abort(
         c(
           "{.val {metric}} distances need a projected CRS, but {.field {col}} uses longitude and latitude.",
-          i = "Use {.code metric = \"haversine\"}, or {.fn sf::st_transform} the data to a projected CRS."
+          i = "Use {.code metric = \"haversine\"}, or use {.fn step_spatial_transform} to transform the data to a projected CRS."
         ),
         call = call
       )
@@ -175,7 +217,7 @@ check_metric_crs <- function(metric, crs, call = rlang::caller_env()) {
       cli::cli_abort(
         c(
           "{.val {metric}} distances need longitude and latitude coordinates, but {.field {col}} has {crs_label(crs[[col]])}.",
-          i = "Use {.code metric = \"euclidean\"} or {.code metric = \"manhattan\"}, or {.fn sf::st_transform} the data to a geographic CRS."
+          i = "Use {.code metric = \"euclidean\"} or {.code metric = \"manhattan\"}, or use {.fn step_spatial_transform} to transform the data to a geographic CRS."
         ),
         call = call
       )
