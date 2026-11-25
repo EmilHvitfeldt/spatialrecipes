@@ -4,7 +4,7 @@
       record_crs(df, "a")
     Condition
       Error:
-      ! Column a must be an <sfc> geometry column.
+      ! Column a must be an <sfc> geometry column, not an integer vector.
 
 # record_crs() errors on missing columns
 
@@ -48,7 +48,7 @@
       check_crs(tibble::tibble(b = 1), crs)
     Condition
       Error:
-      ! Column a must be an <sfc> geometry column in `new_data`.
+      ! Column a must be an <sfc> geometry column in `new_data`, not NULL.
 
 ---
 
@@ -56,5 +56,5 @@
       check_crs(tibble::tibble(a = 1), crs)
     Condition
       Error:
-      ! Column a must be an <sfc> geometry column in `new_data`.
+      ! Column a must be an <sfc> geometry column in `new_data`, not a number.
 

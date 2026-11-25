@@ -41,8 +41,17 @@ ames_reference_polygons <- function() {
 
 ames_fixed_points <- function() {
   sf::st_sfc(
-    sf::st_point(c(-93.6465, 42.0267)),
-    sf::st_point(c(-93.6199, 42.0347)),
+    sf::st_point(c(-93.6460, 42.0254)),
+    sf::st_point(c(-93.6136, 42.0256)),
     crs = 4326
   )
+}
+
+# Points in a projected (or missing) CRS, with known planar distances.
+planar_points <- function(xy, crs = 3857) {
+  sf::st_sfc(lapply(seq_len(nrow(xy)), \(i) sf::st_point(xy[i, ])), crs = crs)
+}
+
+geometry_data <- function(geometry) {
+  tibble::tibble(y = seq_along(geometry), geometry = geometry)
 }
