@@ -11,7 +11,7 @@ record_crs <- function(data, cols, call = rlang::caller_env()) {
     }
     if (!inherits(data[[col]], "sfc")) {
       cli::cli_abort(
-        "Column {.field {col}} must be an {.cls sfc} geometry column.",
+        "Column {.field {col}} must be an {.cls sfc} geometry column, not {.obj_type_friendly {data[[col]]}}.",
         class = "spatialrecipes_crs_column",
         call = call
       )
@@ -28,7 +28,7 @@ check_crs <- function(new_data, crs, call = rlang::caller_env()) {
   for (col in names(crs)) {
     if (!inherits(new_data[[col]], "sfc")) {
       cli::cli_abort(
-        "Column {.field {col}} must be an {.cls sfc} geometry column in {.arg new_data}.",
+        "Column {.field {col}} must be an {.cls sfc} geometry column in {.arg new_data}, not {.obj_type_friendly {new_data[[col]]}}.",
         class = "spatialrecipes_crs_column",
         call = call
       )
@@ -166,7 +166,7 @@ point_coords <- function(x) {
   matrix(xy, ncol = 2, byrow = TRUE)
 }
 
-distance_fun <- function(metric, crs) {
+distance_fun <- function(metric) {
   switch(
     metric,
     euclidean = \(x1, y1, x2, y2) sqrt((x2 - x1)^2 + (y2 - y1)^2),
@@ -183,36 +183,20 @@ haversine_distance <- function(lon1, lat1, lon2, lat2, r = 6371008.8) {
   2 * r * asin(pmin(1, sqrt(h)))
 }
 
-# Distances from every row of `xy` to every row of `ref_xy`, combined across
-# reference points. Returns a matrix with one column, or one per reference point
-# for `aggregate = "all"`. Done in chunks of rows to limit memory use.
-distance_to_ref <- function(xy, ref_xy, metric, aggregate, crs) {
-  f <- distance_fun(metric, crs)
+# Distances from every row of `xy` to every row of `ref_xy`. Returns a matrix
+# with one column per reference point.
+distance_to_ref <- function(xy, ref_xy, metric) {
+  f <- distance_fun(metric)
   n <- nrow(xy)
   m <- nrow(ref_xy)
-  out <- matrix(NA_real_, nrow = n, ncol = if (aggregate == "all") m else 1L)
-  if (n == 0) {
-    return(out)
-  }
-  chunk <- max(1L, floor(1e6 / m))
-  for (start in seq(1L, n, by = chunk)) {
-    idx <- start:min(n, start + chunk - 1L)
-    nc <- length(idx)
-    d <- matrix(
-      f(
-        rep(xy[idx, 1], times = m),
-        rep(xy[idx, 2], times = m),
-        rep(ref_xy[, 1], each = nc),
-        rep(ref_xy[, 2], each = nc)
-      ),
-      nrow = nc
-    )
-    out[idx, ] <- switch(
-      aggregate,
-      nearest = apply(d, 1, min),
-      mean = rowMeans(d),
-      all = d
-    )
-  }
-  out
+  matrix(
+    f(
+      rep(xy[, 1], times = m),
+      rep(xy[, 2], times = m),
+      rep(ref_xy[, 1], each = n),
+      rep(ref_xy[, 2], each = n)
+    ),
+    nrow = n,
+    ncol = m
+  )
 }

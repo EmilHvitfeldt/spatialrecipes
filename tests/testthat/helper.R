@@ -41,8 +41,8 @@ ames_reference_polygons <- function() {
 
 ames_fixed_points <- function() {
   sf::st_sfc(
-    sf::st_point(c(-93.6465, 42.0267)),
-    sf::st_point(c(-93.6199, 42.0347)),
+    sf::st_point(c(-93.6460, 42.0254)),
+    sf::st_point(c(-93.6136, 42.0256)),
     crs = 4326
   )
 }

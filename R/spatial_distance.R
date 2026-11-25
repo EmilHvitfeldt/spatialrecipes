@@ -17,16 +17,12 @@
 #'   distances to, row by row. It must select exactly one `sfc` column with the
 #'   same CRS as the columns in `...`, and is never itself used as a column to
 #'   measure from. Exactly one of `ref` and `ref_col` must be given.
-#' @param metric A single string, one of `"euclidean"`, `"haversine"` or
-#'   `"manhattan"`. `"euclidean"` and `"manhattan"` measure in the units of a
-#'   projected (or missing) CRS and error on longitude and latitude
-#'   coordinates. `"haversine"` measures great-circle distance on a sphere with
-#'   a radius of 6371008.8 meters, requires longitude and latitude coordinates,
-#'   and returns meters. Defaults to `"euclidean"`.
-#' @param aggregate How to combine the distances to the features of `ref`: the
-#'   distance to the `"nearest"` feature, the `"mean"` distance, or `"all"`
-#'   distances, one column per feature of `ref`. Defaults to `"nearest"`. Can't
-#'   be set when `ref_col` is used.
+#' @param metric A single string, one of `"haversine"`, `"euclidean"` or
+#'   `"manhattan"`. `"haversine"` measures great-circle distance on a sphere
+#'   with a radius of 6371008.8 meters, requires longitude and latitude
+#'   coordinates, and returns meters. `"euclidean"` and `"manhattan"` measure
+#'   in the units of a projected (or missing) CRS and error on longitude and
+#'   latitude coordinates. Defaults to `"haversine"`.
 #' @param columns A character string of the selected variable names. This field
 #'   is a placeholder and will be populated once [recipes::prep()] is used.
 #' @param crs A named list of the CRS of each geometry column, recorded when
@@ -42,12 +38,18 @@
 #' ones [step_sfc_point()] creates for missing coordinates) get a distance of
 #' `NA`.
 #'
-#' The new columns are plain numeric vectors, not `units` objects. They are
-#' named `{column}_dist` or, when `aggregate = "all"`, `{column}_dist_{i}` where
-#' `i` is the position of the feature in `ref`. With `aggregate = "all"` the
-#' number of new columns equals the number of features in `ref`, and the
-#' distances to all of them are computed for every row, so this can be costly
-#' for large references.
+#' The new columns are plain numeric vectors, not `units` objects, and depend
+#' on what is passed to the step:
+#'
+#' - With `ref`, every selected column gets one new column for each point in
+#'   `ref`, named `{column}_dist_{i}` where `i` is the position of the point in
+#'   `ref`. One reference point gives one column and five reference points give
+#'   five, each holding the distance from that row to that point. The distances
+#'   to all points are computed for every row, so a large `ref` is costly in
+#'   both time and memory.
+#' - With `ref_col`, every selected column gets a single new column named
+#'   `{column}_dist`. The distance is computed row by row, between the point in
+#'   the selected column and the point in `ref_col` on the same row.
 #'
 #' The CRS of the geometry columns is recorded in [recipes::prep()], and
 #' [recipes::bake()] errors if the CRS of the new data differs.
@@ -55,12 +57,11 @@
 #' # Tidying
 #'
 #' When you [`tidy()`][tidy.recipe()] this step, a tibble is returned with
-#' columns `terms`, `metric`, `aggregate`, and `id`:
+#' columns `terms`, `metric`, and `id`:
 #'
 #' \describe{
 #'   \item{terms}{character, the selectors or variables selected}
 #'   \item{metric}{character, the distance metric}
-#'   \item{aggregate}{character, the aggregate, `NA` when `ref_col` is used}
 #'   \item{id}{character, id of this step}
 #' }
 #'
@@ -69,45 +70,30 @@
 #' library(recipes)
 #' data(ames, package = "modeldata")
 #'
-#' # Hand-picked points: Iowa State University campus and downtown Ames
+#' # Hand-picked points: the Iowa State University Campanile and the Ames Main
+#' # Street Historic District
 #' fixed_points <- sf::st_sfc(
-#'   sf::st_point(c(-93.6465, 42.0267)),
-#'   sf::st_point(c(-93.6199, 42.0347)),
+#'   sf::st_point(c(-93.6460, 42.0254)),
+#'   sf::st_point(c(-93.6136, 42.0256)),
 #'   crs = 4326
 #' )
 #'
 #' rec <- recipe(Sale_Price ~ Longitude + Latitude, data = ames) |>
 #'   step_sfc_point(lon = Longitude, lat = Latitude) |>
-#'   step_spatial_distance(
-#'     all_geometry_predictors(),
-#'     ref = fixed_points,
-#'     metric = "haversine"
-#'   ) |>
+#'   step_spatial_distance(all_geometry_predictors(), ref = fixed_points) |>
 #'   prep()
 #'
+#' # One column per reference point
 #' bake(rec, new_data = NULL)
 #'
 #' tidy(rec, number = 2)
-#'
-#' # One column per reference point
-#' recipe(Sale_Price ~ Longitude + Latitude, data = ames) |>
-#'   step_sfc_point(lon = Longitude, lat = Latitude) |>
-#'   step_spatial_distance(
-#'     all_geometry_predictors(),
-#'     ref = fixed_points,
-#'     metric = "haversine",
-#'     aggregate = "all"
-#'   ) |>
-#'   prep() |>
-#'   bake(new_data = NULL)
 step_spatial_distance <-
   function(
     recipe,
     ...,
     ref = NULL,
     ref_col = NULL,
-    metric = c("euclidean", "haversine", "manhattan"),
-    aggregate = c("nearest", "mean", "all"),
+    metric = c("haversine", "euclidean", "manhattan"),
     role = "predictor",
     trained = FALSE,
     columns = NULL,
@@ -126,22 +112,25 @@ step_spatial_distance <-
       ref_col <- rlang::as_string(ref_col)
     }
 
-    if (has_ref == has_ref_col) {
+    if (has_ref && has_ref_col) {
       cli::cli_abort(
-        "Exactly one of {.arg ref} and {.arg ref_col} must be supplied."
+        c(
+          "Both {.arg ref} and {.arg ref_col} were supplied.",
+          i = "Supply only one of them."
+        )
+      )
+    }
+    if (!has_ref && !has_ref_col) {
+      cli::cli_abort(
+        c(
+          "Neither {.arg ref} nor {.arg ref_col} was supplied.",
+          i = "Supply {.arg ref} to measure distances to fixed points, or {.arg ref_col} to measure distances to another geometry column."
+        )
       )
     }
 
     metric <- rlang::arg_match(metric)
-    if (has_ref_col) {
-      if (!missing(aggregate)) {
-        cli::cli_abort(
-          "{.arg aggregate} can't be used together with {.arg ref_col}."
-        )
-      }
-      aggregate <- NA_character_
-    } else {
-      aggregate <- rlang::arg_match(aggregate)
+    if (has_ref) {
       ref <- check_reference(ref)
     }
 
@@ -152,7 +141,6 @@ step_spatial_distance <-
         ref = ref,
         ref_col = if (has_ref_col) ref_col else NULL,
         metric = metric,
-        aggregate = aggregate,
         role = role,
         trained = trained,
         columns = columns,
@@ -170,7 +158,6 @@ step_spatial_distance_new <-
     ref,
     ref_col,
     metric,
-    aggregate,
     role,
     trained,
     columns,
@@ -185,7 +172,6 @@ step_spatial_distance_new <-
       ref = ref,
       ref_col = ref_col,
       metric = metric,
-      aggregate = aggregate,
       role = role,
       trained = trained,
       columns = columns,
@@ -226,6 +212,8 @@ prep.step_spatial_distance <- function(x, training, info = NULL, ...) {
       if (!crs_equal(crs[[col]], crs[[ref_col]])) {
         cli::cli_abort(c(
           "Column {.field {col}} and {.field {ref_col}} must have the same CRS.",
+          i = "{.field {col}}: {crs_label(crs[[col]])}.",
+          i = "{.field {ref_col}}: {crs_label(crs[[ref_col]])}.",
           i = "Use {.fn sf::st_transform} to put them in the same CRS."
         ))
       }
@@ -237,7 +225,6 @@ prep.step_spatial_distance <- function(x, training, info = NULL, ...) {
     ref = ref,
     ref_col = ref_col,
     metric = x$metric,
-    aggregate = x$aggregate,
     role = x$role,
     trained = TRUE,
     columns = columns,
@@ -260,23 +247,16 @@ bake.step_spatial_distance <- function(object, new_data, ...) {
   res <- list()
   for (col in object$columns) {
     xy <- point_coords(new_data[[col]])
-    crs <- object$crs[[col]]
     if (is.null(object$ref_col)) {
       dist <- distance_to_ref(
         xy,
         point_coords(object$ref[[col]]),
-        object$metric,
-        object$aggregate,
-        crs
+        object$metric
       )
-      if (ncol(dist) == 1L) {
-        new_names <- paste0(col, "_dist")
-      } else {
-        new_names <- paste0(col, "_dist_", seq_len(ncol(dist)))
-      }
+      new_names <- paste0(col, "_dist_", seq_len(ncol(dist)))
     } else {
       ref_xy <- point_coords(new_data[[object$ref_col]])
-      f <- distance_fun(object$metric, crs)
+      f <- distance_fun(object$metric)
       dist <- matrix(f(xy[, 1], xy[, 2], ref_xy[, 1], ref_xy[, 2]), ncol = 1)
       new_names <- paste0(col, "_dist")
     }
@@ -316,8 +296,7 @@ tidy.step_spatial_distance <- function(x, ...) {
   }
   res <- tibble(
     terms = terms,
-    metric = x$metric,
-    aggregate = x$aggregate
+    metric = x$metric
   )
   res$id <- x$id
   res

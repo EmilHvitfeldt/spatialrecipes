@@ -4,7 +4,8 @@
       step_spatial_distance(rec, geometry)
     Condition
       Error in `step_spatial_distance()`:
-      ! Exactly one of `ref` and `ref_col` must be supplied.
+      ! Neither `ref` nor `ref_col` was supplied.
+      i Supply `ref` to measure distances to fixed points, or `ref_col` to measure distances to another geometry column.
 
 ---
 
@@ -12,15 +13,8 @@
       step_spatial_distance(rec, geometry, ref = ref, ref_col = geometry)
     Condition
       Error in `step_spatial_distance()`:
-      ! Exactly one of `ref` and `ref_col` must be supplied.
-
-# aggregate can't be used with ref_col
-
-    Code
-      step_spatial_distance(rec, geometry, ref_col = geometry, aggregate = "mean")
-    Condition
-      Error in `step_spatial_distance()`:
-      ! `aggregate` can't be used together with `ref_col`.
+      ! Both `ref` and `ref_col` were supplied.
+      i Supply only one of them.
 
 # invalid ref errors
 
@@ -60,7 +54,7 @@
 
     Code
       prep(step_spatial_distance(recipe(y ~ ., data = geographic), geometry, ref = planar_points(
-        cbind(0, 0), crs = 4326)))
+        cbind(0, 0), crs = 4326), metric = "euclidean"))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
@@ -71,7 +65,7 @@
 
     Code
       prep(step_spatial_distance(recipe(y ~ ., data = projected), geometry, ref = planar_points(
-        cbind(0, 0)), metric = "haversine"))
+        cbind(0, 0))))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
@@ -82,7 +76,7 @@
 
     Code
       prep(step_spatial_distance(recipe(y ~ ., data = missing_crs), geometry, ref = planar_points(
-        cbind(0, 0), crs = sf::NA_crs_), metric = "haversine"))
+        cbind(0, 0), crs = sf::NA_crs_)))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
@@ -92,7 +86,8 @@
 # ref and column must agree on having a CRS
 
     Code
-      prep(step_spatial_distance(rec, geometry, ref = planar_points(cbind(0, 0), crs = sf::NA_crs_)))
+      prep(step_spatial_distance(rec, geometry, ref = planar_points(cbind(0, 0), crs = sf::NA_crs_),
+      metric = "euclidean"))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
@@ -103,18 +98,21 @@
 # ref_col must have the same CRS as the columns
 
     Code
-      prep(step_spatial_distance(recipe(y ~ ., data = data), from, ref_col = to))
+      prep(step_spatial_distance(recipe(y ~ ., data = data), from, ref_col = to,
+      metric = "euclidean"))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
       ! Column from and to must have the same CRS.
+      i from: EPSG:3857.
+      i to: EPSG:32615.
       i Use `sf::st_transform()` to put them in the same CRS.
 
 # non-point and non-geometry columns error
 
     Code
       prep(step_spatial_distance(recipe(y ~ ., data = geometry_data(polygon)),
-      geometry, ref = ref))
+      geometry, ref = ref, metric = "euclidean"))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
@@ -126,11 +124,11 @@
 
     Code
       prep(step_spatial_distance(recipe(y ~ ., data = tibble::tibble(y = 1, x = 2)),
-      x, ref = ref))
+      x, ref = ref, metric = "euclidean"))
     Condition
       Error in `step_spatial_distance()`:
       Caused by error in `prep()`:
-      ! Column x must be an <sfc> geometry column.
+      ! Column x must be an <sfc> geometry column, not a number.
 
 # name collision errors
 
@@ -140,7 +138,7 @@
       Error in `step_spatial_distance()`:
       Caused by error in `bake()`:
       ! Name collision occurred. The following variable names already exist:
-      * `geometry_dist`
+      * `geometry_dist_1`
 
 # bake() errors when new data is not points
 
@@ -151,6 +149,41 @@
       ! geometry must only contain point geometries.
       x Found "POLYGON".
       i Distances to lines and polygons are not supported yet.
+
+# empty printing
+
+    Code
+      rec
+    Message
+      
+      -- Recipe ----------------------------------------------------------------------
+      
+      -- Inputs 
+      Number of variables by role
+      outcome:   1
+      predictor: 1
+      
+      -- Operations 
+      * Spatial distance on: <none>
+
+---
+
+    Code
+      prep(rec)
+    Message
+      
+      -- Recipe ----------------------------------------------------------------------
+      
+      -- Inputs 
+      Number of variables by role
+      outcome:   1
+      predictor: 1
+      
+      -- Training information 
+      Training data contained 1 data points and no incomplete rows.
+      
+      -- Operations 
+      * Spatial distance on: <none> | Trained
 
 # printing
 

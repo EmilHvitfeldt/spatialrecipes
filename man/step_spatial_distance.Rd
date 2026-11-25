@@ -9,8 +9,7 @@ step_spatial_distance(
   ...,
   ref = NULL,
   ref_col = NULL,
-  metric = c("euclidean", "haversine", "manhattan"),
-  aggregate = c("nearest", "mean", "all"),
+  metric = c("haversine", "euclidean", "manhattan"),
   role = "predictor",
   trained = FALSE,
   columns = NULL,
@@ -38,17 +37,12 @@ distances to, row by row. It must select exactly one \code{sfc} column with the
 same CRS as the columns in \code{...}, and is never itself used as a column to
 measure from. Exactly one of \code{ref} and \code{ref_col} must be given.}
 
-\item{metric}{A single string, one of \code{"euclidean"}, \code{"haversine"} or
-\code{"manhattan"}. \code{"euclidean"} and \code{"manhattan"} measure in the units of a
-projected (or missing) CRS and error on longitude and latitude
-coordinates. \code{"haversine"} measures great-circle distance on a sphere with
-a radius of 6371008.8 meters, requires longitude and latitude coordinates,
-and returns meters. Defaults to \code{"euclidean"}.}
-
-\item{aggregate}{How to combine the distances to the features of \code{ref}: the
-distance to the \code{"nearest"} feature, the \code{"mean"} distance, or \code{"all"}
-distances, one column per feature of \code{ref}. Defaults to \code{"nearest"}. Can't
-be set when \code{ref_col} is used.}
+\item{metric}{A single string, one of \code{"haversine"}, \code{"euclidean"} or
+\code{"manhattan"}. \code{"haversine"} measures great-circle distance on a sphere
+with a radius of 6371008.8 meters, requires longitude and latitude
+coordinates, and returns meters. \code{"euclidean"} and \code{"manhattan"} measure
+in the units of a projected (or missing) CRS and error on longitude and
+latitude coordinates. Defaults to \code{"haversine"}.}
 
 \item{role}{Not used by this step since no new variables are created.}
 
@@ -88,24 +82,30 @@ Only point geometries are supported. Rows with an empty point (such as the
 ones \code{\link[=step_sfc_point]{step_sfc_point()}} creates for missing coordinates) get a distance of
 \code{NA}.
 
-The new columns are plain numeric vectors, not \code{units} objects. They are
-named \verb{\{column\}_dist} or, when \code{aggregate = "all"}, \verb{\{column\}_dist_\{i\}} where
-\code{i} is the position of the feature in \code{ref}. With \code{aggregate = "all"} the
-number of new columns equals the number of features in \code{ref}, and the
-distances to all of them are computed for every row, so this can be costly
-for large references.
+The new columns are plain numeric vectors, not \code{units} objects, and depend
+on what is passed to the step:
+\itemize{
+\item With \code{ref}, every selected column gets one new column for each point in
+\code{ref}, named \verb{\{column\}_dist_\{i\}} where \code{i} is the position of the point in
+\code{ref}. One reference point gives one column and five reference points give
+five, each holding the distance from that row to that point. The distances
+to all points are computed for every row, so a large \code{ref} is costly in
+both time and memory.
+\item With \code{ref_col}, every selected column gets a single new column named
+\verb{\{column\}_dist}. The distance is computed row by row, between the point in
+the selected column and the point in \code{ref_col} on the same row.
+}
 
 The CRS of the geometry columns is recorded in \code{\link[recipes:prep]{recipes::prep()}}, and
 \code{\link[recipes:bake]{recipes::bake()}} errors if the CRS of the new data differs.
 }
 \section{Tidying}{
 When you \code{\link[recipes:tidy.recipe]{tidy()}} this step, a tibble is returned with
-columns \code{terms}, \code{metric}, \code{aggregate}, and \code{id}:
+columns \code{terms}, \code{metric}, and \code{id}:
 
 \describe{
 \item{terms}{character, the selectors or variables selected}
 \item{metric}{character, the distance metric}
-\item{aggregate}{character, the aggregate, \code{NA} when \code{ref_col} is used}
 \item{id}{character, id of this step}
 }
 }
@@ -115,36 +115,22 @@ columns \code{terms}, \code{metric}, \code{aggregate}, and \code{id}:
 library(recipes)
 data(ames, package = "modeldata")
 
-# Hand-picked points: Iowa State University campus and downtown Ames
+# Hand-picked points: the Iowa State University Campanile and the Ames Main
+# Street Historic District
 fixed_points <- sf::st_sfc(
-  sf::st_point(c(-93.6465, 42.0267)),
-  sf::st_point(c(-93.6199, 42.0347)),
+  sf::st_point(c(-93.6460, 42.0254)),
+  sf::st_point(c(-93.6136, 42.0256)),
   crs = 4326
 )
 
 rec <- recipe(Sale_Price ~ Longitude + Latitude, data = ames) |>
   step_sfc_point(lon = Longitude, lat = Latitude) |>
-  step_spatial_distance(
-    all_geometry_predictors(),
-    ref = fixed_points,
-    metric = "haversine"
-  ) |>
+  step_spatial_distance(all_geometry_predictors(), ref = fixed_points) |>
   prep()
 
+# One column per reference point
 bake(rec, new_data = NULL)
 
 tidy(rec, number = 2)
-
-# One column per reference point
-recipe(Sale_Price ~ Longitude + Latitude, data = ames) |>
-  step_sfc_point(lon = Longitude, lat = Latitude) |>
-  step_spatial_distance(
-    all_geometry_predictors(),
-    ref = fixed_points,
-    metric = "haversine",
-    aggregate = "all"
-  ) |>
-  prep() |>
-  bake(new_data = NULL)
 \dontshow{\}) # examplesIf}
 }
